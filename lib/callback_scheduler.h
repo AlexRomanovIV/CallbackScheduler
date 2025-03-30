@@ -32,7 +32,7 @@ private:
     std::condition_variable Trigger_;
     std::mutex TriggerMutex_;
 
-    std::unique_ptr<std::jthread> SchedulerThread_;
-
     std::shared_ptr<ICallbackExecutor> Executor_;
+
+    std::unique_ptr<std::jthread> SchedulerThread_;
 };

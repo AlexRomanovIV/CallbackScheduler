@@ -76,6 +76,24 @@ TEST(callback_scheduler, complex) {
 	EXPECT_EQ(number, 22);
 }
 
+TEST(callback_scheduler, none) {
+	TCallbackScheduler scheduler(std::make_shared<TSimpleThreadExecutor>());
+}
+
+TEST(callback_scheduler, no_time) {
+	TCallbackScheduler scheduler(std::make_shared<TSimpleThreadExecutor>());
+	std::atomic<int> number{0};
+
+	auto inc = [&number]() {
+		++number;
+	};
+	scheduler.AddTask(inc, TCallbackScheduler::TDuration(0ms));
+	scheduler.AddTask(inc, TCallbackScheduler::TDuration(30ms));
+	scheduler.AddTask(inc, TCallbackScheduler::TDuration(200ms));
+	// not enough time to finish all
+}
+
+
 int main(int argc, char *argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);

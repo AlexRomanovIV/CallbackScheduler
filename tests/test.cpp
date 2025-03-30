@@ -1,4 +1,5 @@
 #include <atomic>
+#include <mutex>
 #include <type_traits>
 
 #include <gtest/gtest.h>
@@ -51,13 +52,16 @@ TEST(callback_scheduler, inc) {
 
 TEST(callback_scheduler, complex) {
 	TCallbackScheduler scheduler(std::make_shared<TSimpleThreadExecutor>());
-	std::atomic<int> number{0};
+	int number{0};
+	std::mutex mutex;
 
-	auto inc = [&number]() {
+	auto inc = [&number, &mutex]() {
+		std::lock_guard guard(mutex);
 		++number;
 	};
-	auto twice = [&number]() {
-		number+=number;
+	auto twice = [&number, &mutex]() {
+		std::lock_guard guard(mutex);
+		number*=2;
 	};
 
 	scheduler.AddTask(inc, TCallbackScheduler::TDuration(30ms));
@@ -88,6 +92,8 @@ TEST(callback_scheduler, no_time) {
 		++number;
 	};
 	scheduler.AddTask(inc, TCallbackScheduler::TDuration(0ms));
+	scheduler.AddTask(inc, TCallbackScheduler::TDuration(1ms));
+	scheduler.AddTask(inc, TCallbackScheduler::TDuration(2ms));
 	scheduler.AddTask(inc, TCallbackScheduler::TDuration(30ms));
 	scheduler.AddTask(inc, TCallbackScheduler::TDuration(200ms));
 	// not enough time to finish all

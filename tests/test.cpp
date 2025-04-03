@@ -1,5 +1,6 @@
 #include <atomic>
 #include <mutex>
+#include <stdexcept>
 #include <type_traits>
 
 #include <gtest/gtest.h>
@@ -97,6 +98,22 @@ TEST(callback_scheduler, no_time) {
 	scheduler.AddTask(inc, TCallbackScheduler::TDuration(30ms));
 	scheduler.AddTask(inc, TCallbackScheduler::TDuration(200ms));
 	// not enough time to finish all
+}
+
+TEST(callback_scheduler, future) {
+	TCallbackScheduler scheduler(std::make_shared<TSimpleThreadExecutor>());
+
+	std::function<int()> funcNum = []() { return 2*2; };
+	std::function<const char*()> funcString = []() { return "2*2"; };
+	std::function<int()> funcException = []() { throw std::runtime_error("exception"); return 42; };
+
+	std::future<int> fnum = scheduler.AddTaskWithFuture(funcNum, TCallbackScheduler::TDuration(0ms));
+	std::future<const char*> fstring = scheduler.AddTaskWithFuture(funcString, TCallbackScheduler::TDuration(5ms));
+	std::future<int> fexception = scheduler.AddTaskWithFuture(funcException, TCallbackScheduler::TDuration(10ms));
+
+	EXPECT_EQ(fnum.get(), 4);
+	EXPECT_STREQ(fstring.get(), "2*2");
+	EXPECT_THROW(fexception.get(), std::runtime_error);
 }
 
 

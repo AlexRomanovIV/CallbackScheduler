@@ -1,7 +1,5 @@
 #include "callback_scheduler.h"
 
-#include <future>
-
 TCallbackScheduler::TCallbackScheduler(std::shared_ptr<ICallbackExecutor> executor)
 : Executor_(executor)
 {

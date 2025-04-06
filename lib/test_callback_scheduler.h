@@ -5,7 +5,7 @@
 
 class TSyncExecutor : public ICallbackExecutor {
 public:
-    void Invoke(std::function<void(void)> callback) override;
+    void Invoke(std::function<void(void)> callback) final;
 };
 
 class TTestCallbackScheduler : public TCallbackScheduler {
@@ -14,7 +14,7 @@ public:
     void SetNow(TTimePoint now);
     void IncDuration(TDuration period);
 protected:
-    TTimePoint GetNow() const override;
+    TTimePoint GetNow() const final;
 private:
     std::atomic<TTimePoint> Now_;
 };

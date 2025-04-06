@@ -24,10 +24,14 @@ void TCallbackScheduler::InitSchedulerThread() {
                 InputQueue_.pop();
             }
 
-            auto now = std::chrono::steady_clock::now();
+            const auto now = GetNow();
             while (!CallbackQueue_.empty() && now >= CallbackQueue_.begin()->first) {
                 Executor_->Invoke(CallbackQueue_.begin()->second);
                 CallbackQueue_.erase(CallbackQueue_.begin());
+            }
+
+            if (!Done_.test_and_set()) {
+                Done_.notify_one();
             }
         }
     };
@@ -42,7 +46,7 @@ TCallbackScheduler::~TCallbackScheduler() {
 }
 
 void TCallbackScheduler::AddTask(std::function<void(void)> callback, std::chrono::steady_clock::duration duration) {
-    AddTask(callback, std::chrono::steady_clock::now() + duration);
+    AddTask(callback, GetNow() + duration);
 }
 
 void TCallbackScheduler::AddTask(std::function<void(void)> callback, std::chrono::time_point<std::chrono::steady_clock> timePoint) {
@@ -50,4 +54,17 @@ void TCallbackScheduler::AddTask(std::function<void(void)> callback, std::chrono
 
     InputQueue_.emplace(timePoint, callback);
     Trigger_.notify_one();
+}
+
+TCallbackScheduler::TTimePoint TCallbackScheduler::GetNow() const {
+    return std::chrono::steady_clock::now();
+}
+
+void TCallbackScheduler::ForceCycle() {
+    {
+        std::lock_guard guard(TriggerMutex_);
+        Done_.clear();
+        Trigger_.notify_one();
+    }
+    Done_.wait(false);
 }

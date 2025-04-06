@@ -37,6 +37,10 @@ public:
 
     void AddTask(TCallback callback, TDuration duration);
     void AddTask(TCallback callback, TTimePoint time_point);
+protected:
+    /* test purposes only */
+    virtual TTimePoint GetNow() const;
+    void ForceCycle();
 private:
     void InitSchedulerThread();
 
@@ -59,10 +63,11 @@ private:
 
     std::queue<std::pair<TTimePoint, TCallback>> InputQueue_;
 
-    std::condition_variable Trigger_;
-    std::mutex TriggerMutex_;
+    std::condition_variable_any Trigger_;
+    std::recursive_mutex TriggerMutex_;
 
     std::shared_ptr<ICallbackExecutor> Executor_;
 
     std::unique_ptr<std::jthread> SchedulerThread_;
+    std::atomic_flag Done_;
 };

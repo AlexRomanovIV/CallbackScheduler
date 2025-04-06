@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "lib/simple_thread_executor.h"
-#include "lib/callback_scheduler.h"
+#include "lib/test_callback_scheduler.h"
 
 using namespace std::chrono_literals;
 
@@ -30,8 +30,12 @@ TEST(simple_thread_executor, inc) {
 	IncTestExecutor(std::make_unique<TSimpleThreadExecutor>());
 }
 
+TEST(sync_thread_executor, inc) {
+	IncTestExecutor(std::make_unique<TSyncExecutor>());
+}
+
 TEST(callback_scheduler, inc) {
-	TCallbackScheduler scheduler(std::make_shared<TSimpleThreadExecutor>());
+	TTestCallbackScheduler scheduler;
 	constexpr int ITER_COUNT = 10;
 	std::atomic<int> number{0};
 
@@ -41,18 +45,19 @@ TEST(callback_scheduler, inc) {
 	for (int i = 1; i <= ITER_COUNT; ++i) {
 		scheduler.AddTask(inc, i*TCallbackScheduler::TDuration(100ms));
 	}
-	std::this_thread::sleep_for(50ms);
+
+	scheduler.IncDuration(50ms);
 
 	for (int i = 0; i < ITER_COUNT; ++i) {
 		EXPECT_EQ(number, i);
-		std::this_thread::sleep_for(100ms);
+		scheduler.IncDuration(100ms);
 	}
 
 	EXPECT_EQ(number, ITER_COUNT);
 }
 
 TEST(callback_scheduler, complex) {
-	TCallbackScheduler scheduler(std::make_shared<TSimpleThreadExecutor>());
+	TTestCallbackScheduler scheduler;
 	int number{0};
 	std::mutex mutex;
 
@@ -73,11 +78,11 @@ TEST(callback_scheduler, complex) {
 	scheduler.AddTask(twice, TCallbackScheduler::TDuration(90ms));
 	scheduler.AddTask(inc, TCallbackScheduler::TDuration(120ms));
 
-	std::this_thread::sleep_for(135ms);
+	scheduler.IncDuration(135ms);
 	EXPECT_EQ(number, 5);
-	std::this_thread::sleep_for(40ms);
+	scheduler.IncDuration(40ms);
 	EXPECT_EQ(number, 10);
-	std::this_thread::sleep_for(200ms);
+	scheduler.IncDuration(200ms);
 	EXPECT_EQ(number, 22);
 }
 
